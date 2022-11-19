@@ -28,9 +28,17 @@ const alphabets = [
 ];
 interface HangManKeyboardProps {
   clickHandler: (letterClicked: string) => void;
+  activeLetters: string[];
+  inactiveLetters: string[];
+  disabled?: boolean;
 }
 
-export const HangManKeyboard = ({ clickHandler }: HangManKeyboardProps) => {
+export const HangManKeyboard = ({
+  clickHandler,
+  activeLetters,
+  inactiveLetters,
+  disabled=false,
+}: HangManKeyboardProps) => {
   return (
     <div
       style={{
@@ -40,11 +48,14 @@ export const HangManKeyboard = ({ clickHandler }: HangManKeyboardProps) => {
       }}
     >
       {alphabets.map((alphabet) => {
+        const inactive = inactiveLetters.includes(alphabet) ? "inactive" : "";
+        const active = activeLetters.includes(alphabet) ? "active" : "";
         return (
           <button
             key={alphabet}
-            className={`btn `}
+            className={`btn ${inactive} ${active} `}
             onClick={(e) => clickHandler(alphabet)}
+            disabled={inactive || active || disabled ? true : false}
           >
             {alphabet}
           </button>

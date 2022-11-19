@@ -1,4 +1,4 @@
-import { SyntheticEvent, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import { HangManDrawing } from "./HangManDrawing";
 import { HangManKeyboard } from "./HangManKeyboard";
@@ -6,28 +6,31 @@ import { HangManWord } from "./HangManWord";
 import words from "./wordList.json";
 
 function App() {
-  const [wordToGuess, setWordToGuess] = useState(() => {
+  const getWord = () => {
     return words.data[Math.floor(Math.random() * words.data.length)];
-  });
+  };
+  const [wordToGuess, setWordToGuess] = useState(getWord);
 
   const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
 
   const incorrectLetters = guessedLetters.filter(
     (letter) => !wordToGuess.includes(letter)
   );
+  const isLoser = incorrectLetters.length >= 6 ? true : false;
+  const isWinner = wordToGuess
+    .split("")
+    .every((letter) => guessedLetters.includes(letter));
 
-  const clickHandler = (letterClicked: string) => {
-    setGuessedLetters((previousState) => {
-      return [...previousState, letterClicked];
-    });
-  };
+  const addGuessedLetter = useCallback(
+    (letterPressed: string) => {
+      if (guessedLetters.includes(letterPressed) || isWinner || isLoser) return;
+      setGuessedLetters((previousState) => {
+        return [...previousState, letterPressed];
+      });
+    },
+    [guessedLetters, isWinner, isLoser]
+  );
 
-  const addGuessedLetter = (letterPressed: string) => {
-    if (guessedLetters.includes(letterPressed)) return;
-    setGuessedLetters((previousState) => {
-      return [...previousState, letterPressed];
-    });
-  };
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const key = e.key;
@@ -42,7 +45,22 @@ function App() {
     return () => {
       document.removeEventListener("keypress", handler);
     };
-  }, [guessedLetters]);
+  }, [addGuessedLetter, guessedLetters]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key;
+      if (key !== "Enter") return;
+      e.preventDefault();
+      setGuessedLetters([])
+      setWordToGuess(getWord());
+    };
+    document.addEventListener("keypress", handler);
+
+    return () => {
+      document.removeEventListener("keypress", handler);
+    };
+  }, []);
 
   return (
     <div
@@ -56,13 +74,26 @@ function App() {
         alignItems: "center",
       }}
     >
-      <div style={{ fontSize: "2rem", textAlign: "center" }}>Lose or Win</div>
-      <h1>{wordToGuess}</h1>
+      <div style={{ fontSize: "2rem", textAlign: "center" }}>
+        {isWinner && "Winner!!- Refresh to Try Again"}
+        {isLoser && "Nice Try -  Refresh to Try Again"}
+      </div>
 
       <HangManDrawing numberOfGuesses={incorrectLetters.length} />
-      <HangManWord wordToGuess={wordToGuess} guessedLetters={guessedLetters} />
+      <HangManWord
+        wordToGuess={wordToGuess}
+        guessedLetters={guessedLetters}
+        reveal={isLoser}
+      />
       <div style={{ alignSelf: "stretch" }}>
-        <HangManKeyboard clickHandler={clickHandler} />
+        <HangManKeyboard
+          disabled={isWinner || isLoser}
+          clickHandler={addGuessedLetter}
+          activeLetters={guessedLetters.filter((letter) =>
+            wordToGuess.includes(letter)
+          )}
+          inactiveLetters={incorrectLetters}
+        />
       </div>
     </div>
   );
