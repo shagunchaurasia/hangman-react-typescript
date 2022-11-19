@@ -1,24 +1,69 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { SyntheticEvent, useEffect, useState } from "react";
+import "./App.css";
+import { HangManDrawing } from "./HangManDrawing";
+import { HangManKeyboard } from "./HangManKeyboard";
+import { HangManWord } from "./HangManWord";
+import words from "./wordList.json";
 
 function App() {
+  const [wordToGuess, setWordToGuess] = useState(() => {
+    return words.data[Math.floor(Math.random() * words.data.length)];
+  });
+
+  const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
+
+  const incorrectLetters = guessedLetters.filter(
+    (letter) => !wordToGuess.includes(letter)
+  );
+
+  const clickHandler = (letterClicked: string) => {
+    setGuessedLetters((previousState) => {
+      return [...previousState, letterClicked];
+    });
+  };
+
+  const addGuessedLetter = (letterPressed: string) => {
+    if (guessedLetters.includes(letterPressed)) return;
+    setGuessedLetters((previousState) => {
+      return [...previousState, letterPressed];
+    });
+  };
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key;
+      if (!key.match(/^[a-z]$/)) {
+        return;
+      }
+      e.preventDefault();
+      addGuessedLetter(key);
+    };
+    document.addEventListener("keypress", handler);
+
+    return () => {
+      document.removeEventListener("keypress", handler);
+    };
+  }, [guessedLetters]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div
+      style={{
+        maxWidth: "800px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: "2rem",
+        margin: "0 auto",
+        alignItems: "center",
+      }}
+    >
+      <div style={{ fontSize: "2rem", textAlign: "center" }}>Lose or Win</div>
+      <h1>{wordToGuess}</h1>
+
+      <HangManDrawing numberOfGuesses={incorrectLetters.length} />
+      <HangManWord wordToGuess={wordToGuess} guessedLetters={guessedLetters} />
+      <div style={{ alignSelf: "stretch" }}>
+        <HangManKeyboard clickHandler={clickHandler} />
+      </div>
     </div>
   );
 }
